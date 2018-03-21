@@ -15,9 +15,9 @@ import           GHC.Generics
   -- DEMO --
 
 
-data Animal = Dog | Cat | Bird{limbs :: Int, wings :: Maybe Int} | Dunky{foots :: Text, eyz :: Maybe Int} deriving(Show, Generic, Eq, DartTypeConvertible)
+data Animal = Dog | Cat | Bird{limbs :: Int, wings :: Int} | Dunky{foots :: Text, eyz :: Int} deriving(Show, Generic, Eq, DartTypeConvertible)
 
-data Pet = Pet {animal ::  Maybe [ Animal]} deriving(Show, Generic, Eq, DartTypeConvertible)
+data Pet = Pet {animal ::  [ Animal]} deriving(Show, Generic, Eq, DartTypeConvertible)
 
 -- data TupleTrial = TupleTrial {trial :: (Animal, Pet, Pet,Animal, Pet)} deriving(Show, Generic, Eq, DartTypeConvertible)
 
