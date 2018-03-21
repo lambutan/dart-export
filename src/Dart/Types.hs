@@ -19,7 +19,7 @@ instance Pretty DartPrimitive where
   pretty DartDouble   = pretty ("double" :: Text)
   pretty DartInt      = pretty ("int" :: Text)
   pretty DartString   = pretty ("String" :: Text)
-  -- pretty (TSOptional a) = pretty a
+  -- pretty (DartOptional a) = pretty a
   pretty (DartList a) = pretty ("List" :: Text) <> angles ( pretty a )
 
 instance Pretty DartTypeLabel where
@@ -31,8 +31,7 @@ instance Pretty DartConstructor where
 
 instance Pretty DartDataType where
   pretty (DartPrimitive _)            = emptyDoc
-  pretty dt@(DartDataType title cons) = renderDataType dt <> hardline
-  -- pretty dt@(DartDataType title cons) = renderAlias dt <> hardline <> vsep (renderClass <$> cons) <> hardline
+  pretty dt@(DartDataType title cons) = vsep $ renderDataType dt : punctuate hardline (renderConstructor title <$> cons)
 
 ------------------------------------
 
@@ -42,47 +41,23 @@ Instructions for rendering specific elements
 
 renderDataType :: DartDataType -> Doc ann
 renderDataType (DartPrimitive _)         = emptyDoc
-renderDataType (DartDataType title cons) = pretty( "abstract class " <> title ) <+> hBraces ""
+renderDataType (DartDataType title cons) = pretty ( "abstract class " <> title )
+                                       <+> hBraces
+                                       (indentStack 1 $ pretty <$> ["final String _tag;", "", title <> "(this._tag)" ])
+                                       <> hardline
 
+renderField :: DartField -> Doc ann
+renderField (DartField name contents) = pretty ("final" :: Text) <+> pretty contents <+> pretty name <> semi
 
--- renderField :: TSField -> Doc ann
--- renderField (TSField name contents) =
---   case contents of
---     TSPrimitiveLabel(TSOptional _) -> pretty ("readonly " <> name <> "?:") <+> pretty contents <> semi
---     _                              -> pretty ("readonly " <> name <> ":")  <+> pretty contents <> semi
---
--- renderConstructorField :: TSField -> Doc ann
--- renderConstructorField (TSField name contents) = pretty ("this." <> name <> " = " <> name <> "Var")
---
---
--- stackFields :: (TSField -> Doc ann) -> [TSField] -> Doc ann
--- stackFields fieldRenderer fields = indentStack 4 (fieldRenderer <$> fields)
---
--- renderClassConstructorVars :: [TSField] -> Doc ann
--- renderClassConstructorVars fields =
---   let
---     grabField (TSField name contents) = pretty (name <> "Var:") <+> pretty contents
---   in
---     hsep $ punctuate comma (grabField <$> fields)
---
--- renderClassConstructor :: [TSField] -> Doc ann
--- renderClassConstructor fields = indent 4 (
---                              pretty ("constructor" :: Text)
---                           <> parens (renderClassConstructorVars fields)
---                           <> hBraces (stackFields renderConstructorField fields)
---                              )
---
--- renderAlias :: TSDataType -> Doc ann
--- renderAlias (TSPrimitive _)         = emptyDoc
--- renderAlias (TSDataType title cons) = if Prelude.length cons < 2 then emptyDoc
---                                       else
---                                         let alias = hsep (punctuate (space <> pipe) $ pretty <$> cons)
---                                         in pretty ("export type " <> title) <+> equals <+> alias <> hardline
---
--- renderClass :: TSConstructor -> Doc ann
--- renderClass (TSConstructor txt fields) = pretty ("export class " <> txt)
---                                         <+> hBraces (stackFields renderField fields <> hardline <> renderClassConstructor fields)
---                                         <> hardline
---
+renderConstructor :: Text -> DartConstructor -> Doc ann
+renderConstructor parent (DartConstructor txt fields) =
+                let
+                  prettyOwnFields = (\(DartField name _) -> pretty $ "this." <> name) <$> fields
+                  fieldTuple = tupled prettyOwnFields
+                  dartConstructor = hardline <> pretty txt <> fieldTuple <+> colon <+> pretty ("super" :: Text) <> parens (squotes $ pretty txt) <> semi
+                in
+                  pretty ("class " <> txt <> " extends " <> parent)
+              <+> hBraces (indentStack 1 ((renderField <$> fields) ++ [ dartConstructor ]))
+
 getDartType :: (DartTypeConvertible a) => Proxy a -> Doc ann
 getDartType prx = pretty $ toDartType prx

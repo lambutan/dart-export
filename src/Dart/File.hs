@@ -27,7 +27,7 @@ ensureDirectory rootDir spec =
 specToFile :: FilePath -> Spec ann -> IO ()
 specToFile rootDir spec =
   let path = pathForSpec rootDir spec
-      file = makePath path <> ".ts"
+      file = makePath path <> ".dart"
       body = vsep $ declarations spec
   in do
     ensureDirectory rootDir spec
