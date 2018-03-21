@@ -31,7 +31,10 @@ instance Pretty DartConstructor where
 
 instance Pretty DartDataType where
   pretty (DartPrimitive _)            = emptyDoc
-  pretty dt@(DartDataType title cons) = vsep $ renderDataType dt : punctuate hardline (renderConstructor title <$> cons)
+  pretty dt@(DartDataType title cons) =
+    case Prelude.length cons of
+      1 -> vsep $ renderSingleConstructor title <$> cons
+      _ -> vsep $ renderDataType dt : punctuate hardline (renderConstructor title <$> cons)
 
 ------------------------------------
 
@@ -57,6 +60,16 @@ renderConstructor parent (DartConstructor txt fields) =
                   dartConstructor = hardline <> pretty txt <> fieldTuple <+> colon <+> pretty ("super" :: Text) <> parens (squotes $ pretty txt) <> semi
                 in
                   pretty ("class " <> txt <> " extends " <> parent)
+              <+> hBraces (indentStack 1 ((renderField <$> fields) ++ [ dartConstructor ]))
+
+renderSingleConstructor :: Text -> DartConstructor -> Doc ann
+renderSingleConstructor parent (DartConstructor txt fields) =
+                let
+                  prettyOwnFields = (\(DartField name _) -> pretty $ "this." <> name) <$> fields
+                  fieldTuple = tupled prettyOwnFields
+                  dartConstructor = hardline <> pretty txt <> fieldTuple <> semi
+                in
+                  pretty ("class " <> parent)
               <+> hBraces (indentStack 1 ((renderField <$> fields) ++ [ dartConstructor ]))
 
 getDartType :: (DartTypeConvertible a) => Proxy a -> Doc ann
