@@ -20,12 +20,12 @@ data DartPrimitive = DartBool
                    -- | DartMap
                    -- | DartRune
                    -- | DartSymbol
-                   | DartOptional DartTypeLabel
+                   -- | DartOptional DartTypeLabel
                    | DartList DartTypeLabel
                    deriving(Show, Eq)
 
 {-|
-DartDataType' describes the Haskell type to be exported to Dart.
+'DartDataType' describes the Haskell type to be exported to Dart.
 This exported type can either be a directly translated to a Dart primitive
 or it is an algebraic data type with a name and a set of constructors
 -}
@@ -41,13 +41,17 @@ data DartConstructor = DartConstructor Text [ DartField ] deriving(Show, Eq)
 
 {-|
 A type label used in the record fields. The difference between this and
-DartDataType is that a label only carries the type, not the constructors or
+'DartDataType' is that a label only carries the type, not the constructors or
 fields.
 -}
 data DartTypeLabel = DartPrimitiveLabel DartPrimitive
                    | DartLabel Text
                    deriving(Show, Eq)
 
+
+{-|
+A function which produces a type label given a Haskell type
+-}
 getTypeLabel :: DartTypeConvertible a => Proxy a -> DartTypeLabel
 getTypeLabel prx =
  case toDartType prx of
@@ -71,30 +75,54 @@ class DartTypeConvertible a where
 {-|
 Convenience function: allows to use Proxy instead of undefined
 -}
-
 instance (DartTypeConvertible a) =>
   DartTypeConvertible (Proxy a) where
   toDartType _ = toDartType (undefined :: a)
 
+{-|
+Conversion of Text to Dart String
+-}
 instance DartTypeConvertible Text where
   toDartType _ = DartPrimitive DartString
 
+{-|
+Conversion of String to Dart String
+-}
+instance DartTypeConvertible String where
+  toDartType _ = DartPrimitive DartString
+
+
+{-|
+Conversion of Float to Dart Double
+-}
 instance DartTypeConvertible Float where
   toDartType _ = DartPrimitive DartDouble
 
+{-|
+Conversion of Double to Dart Double
+-}
 instance DartTypeConvertible Double where
   toDartType _ = DartPrimitive DartDouble
 
+{-|
+Conversion of Int to Dart Int
+-}
 instance DartTypeConvertible Int where
   toDartType _ = DartPrimitive DartInt
 
+{-|
+Conversion of Bool to Dart Bool
+-}
 instance DartTypeConvertible Bool where
   toDartType _ = DartPrimitive DartBool
 
-instance DartTypeConvertible a =>
-         DartTypeConvertible (Maybe a) where
-  toDartType _ = DartPrimitive (DartOptional (getTypeLabel (Proxy :: Proxy a)))
+-- instance DartTypeConvertible a =>
+--          DartTypeConvertible (Maybe a) where
+--   toDartType _ = DartPrimitive (DartOptional (getTypeLabel (Proxy :: Proxy a)))
 
+{-|
+Conversion of List to Dart List
+-}
 instance (DartTypeConvertible a) =>
          DartTypeConvertible [a] where
   toDartType _ = DartPrimitive (DartList (getTypeLabel (Proxy :: Proxy a)))
@@ -105,7 +133,6 @@ instance (DartTypeConvertible a) =>
 Typically we will be converting Haskell data types with Generics derived.
 GenericToDartType class defines how one does that
 -}
-
 class GenericToDartType a where
   genericToDartType :: a c -> DartDataType
 
@@ -119,7 +146,6 @@ instance (Datatype d, GenericToDartConstructor f) =>
 {-|
 Class for obtaining constructors from the Generic class
 -}
-
 class GenericToDartConstructor a where
   genericToDartConstructor :: a c -> [ DartConstructor ]
 
@@ -143,7 +169,6 @@ instance (GenericToDartConstructor a, GenericToDartConstructor b) =>
 {-|
 Class for obtaining fields from the Generic class
 -}
-
 class GenericToDartField a where
   genericToDartField :: a p -> [ DartField ]
 

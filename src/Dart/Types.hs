@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Dart.Types where
+module Dart.Types (getDartType) where
 
 import           Dart.Converter
 import           Dart.Util
@@ -72,5 +72,8 @@ renderSingleConstructor parent (DartConstructor txt fields) =
                   pretty ("class " <> parent)
               <+> hBraces (indentStack 1 ((renderField <$> fields) ++ [ dartConstructor ]))
 
+{-|
+Obtain a prettified version of the Dart syntax from a Haskell type
+-}
 getDartType :: (DartTypeConvertible a) => Proxy a -> Doc ann
 getDartType prx = pretty $ toDartType prx
